@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESG — Elite Special Grupa</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =====================================================
+       CSS VARIABLES — Edit these to change the theme
+    ===================================================== */
+    :root {
+      --bg-primary:     #050810;
+      --bg-secondary:   #080d1a;
+      --bg-card:        #0b1120;
+      --bg-card-hover:  #0f1830;
+
+      --accent-blue:    #1a6fff;
+      --accent-blue-dim:#0d3d8a;
+      --accent-red:     #cc1f1f;
+      --accent-red-dim: #7a1010;
+      --accent-gold:    #c8902a;
+
+      --text-primary:   #e8eaf0;
+      --text-secondary: #8a9ab8;
+      --text-muted:     #4a5570;
+
+      --border:         rgba(26, 111, 255, 0.15);
+      --border-hover:   rgba(26, 111, 255, 0.45);
+      --glow-blue:      0 0 20px rgba(26, 111, 255, 0.25);
+      --glow-red:       0 0 20px rgba(204, 31, 31, 0.25);
+      --glow-gold:      0 0 20px rgba(200, 144, 42, 0.3);
+
+      --ticker-height:  34px;
+      --navbar-height:  64px;
+      --section-pad:    120px;
+      --transition:     0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* =====================================================
+       RESET & BASE
+    ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; scroll-padding-top: calc(var(--navbar-height) + var(--ticker-height)); }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      overflow-x: hidden;
+      cursor: none; /* Hidden — replaced by custom cursor */
+    }
+
+    /* =====================================================
+       CUSTOM CURSOR (Claude's addition — tactical crosshair)
+    ===================================================== */
+    #cursor {
+      position: fixed;
+      top: 0; left: 0;
+      width: 28px; height: 28px;
+      pointer-events: none;
+      z-index: 99999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.08s ease, opacity 0.3s ease;
+    }
+
+    #cursor svg { width: 100%; height: 100%; }
+
+    #cursor-dot {
+      position: fixed;
+      top: 0; left: 0;
+      width: 4px; height: 4px;
+      background: var(--accent-blue);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99999;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 6px var(--accent-blue);
+      transition: transform 0.04s ease;
+    }
+
+    #cursor.clicked { transform: translate(-50%, -50%) scale(0.7); }
+
+    /* Restore normal cursor on interactive elements */
+    a, button, [role="button"] { cursor: none; }
+
+    /* =====================================================
+       OPERATIONAL STATUS TICKER (Claude's addition)
+       Edit the ticker items below in the HTML
+    ===================================================== */
+    #status-ticker {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--ticker-height);
+      background: rgba(5, 8, 16, 0.95);
+      border-bottom: 1px solid rgba(26, 111, 255, 0.2);
+      z-index: 101;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .ticker-label {
+      flex-shrink: 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--accent-red);
+      background: var(--accent-red-dim);
+      border-right: 1px solid rgba(204,31,31,0.4);
+      padding: 0 14px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .ticker-track {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+    }
+
+    .ticker-inner {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      white-space: nowrap;
+      animation: ticker-scroll 30s linear infinite;
+    }
+
+    .ticker-inner:hover { animation-play-state: paused; }
+
+    .ticker-item {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--text-secondary);
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ticker-item .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-green  { background: #2aff7a; box-shadow: 0 0 6px #2aff7a; }
+    .dot-yellow { background: #ffcc00; box-shadow: 0 0 6px #ffcc00; }
+    .dot-red    { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+
+    .ticker-sep {
+      color: var(--text-muted);
+      padding: 0 12px;
+    }
+
+    @keyframes ticker-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* =====================================================
+       LOADING SCREEN
+    ===================================================== */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    #loader.hidden { opacity: 0; visibility: hidden; }
+
+    .loader-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 0.25em;
+      color: var(--accent-blue);
+      text-shadow: var(--glow-blue);
+      animation: loader-pulse 1.5s ease-in-out infinite;
+    }
+
+    .loader-bar-wrap {
+      width: 200px; height: 2px;
+      background: var(--border);
+      margin-top: 28px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .loader-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-red));
+      border-radius: 2px;
+      animation: loader-fill 1.8s ease forwards;
+    }
+
+    .loader-text {
+      margin-top: 14px;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+    }
+
+    /* Typewriter effect on loader */
+    .loader-typewriter {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent-blue);
+      margin-top: 20px;
+      letter-spacing: 0.05em;
+      height: 1.4em;
+      overflow: hidden;
+    }
+
+    @keyframes loader-fill   { to { width: 100%; } }
+    @keyframes loader-pulse  { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+    /* =====================================================
+       NAVBAR
+    ===================================================== */
+    #navbar {
+      position: fixed;
+      top: var(--ticker-height);
+      left: 0; right: 0;
+      height: var(--navbar-height);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      background: rgba(5, 8, 16, 0.7);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+
+    #navbar.scrolled {
+      background: rgba(5, 8, 16, 0.95);
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+    }
+
+    .nav-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.4rem;
+      letter-spacing: 0.25em;
+      color: var(--accent-blue);
+      text-decoration: none;
+      text-shadow: var(--glow-blue);
+      transition: color var(--transition);
+      margin-right: auto;
+    }
+
+    .nav-logo span { color: var(--accent-red); }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 4px;
+      transition: color var(--transition);
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 1px;
+      background: var(--accent-blue);
+      transition: width var(--transition);
+      box-shadow: var(--glow-blue);
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-links a:hover::after { width: 100%; }
+
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: none;
+      padding: 4px;
+      background: none;
+      border: none;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 24px; height: 2px;
+      background: var(--text-secondary);
+      border-radius: 2px;
+      transition: all var(--transition);
+    }
+
+    /* =====================================================
+       HERO SECTION
+    ===================================================== */
+    #home {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+      padding: calc(var(--navbar-height) + var(--ticker-height) + 40px) 24px 0;
+    }
+
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(26,111,255,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(204,31,31,0.05) 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      z-index: 0;
+    }
+
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(26,111,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,111,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: grid-drift 20s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes grid-drift {
+      0%   { background-position: 0 0; }
+      100% { background-position: 60px 60px; }
+    }
+
+    .hero-scan {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 0%, rgba(26,111,255,0.03) 50%, transparent 100%);
+      background-size: 100% 200px;
+      animation: scan 8s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes scan {
+      0%   { background-position: 0 -200px; }
+      100% { background-position: 0 100vh; }
+    }
+
+    .hero-corner {
+      position: absolute;
+      width: 60px; height: 60px;
+      border-color: var(--accent-blue);
+      border-style: solid;
+      opacity: 0.3;
+    }
+    .hero-corner.tl { top: 108px; left: 40px; border-width: 2px 0 0 2px; }
+    .hero-corner.tr { top: 108px; right: 40px; border-width: 2px 2px 0 0; }
+    .hero-corner.bl { bottom: 80px; left: 40px; border-width: 0 0 2px 2px; }
+    .hero-corner.br { bottom: 80px; right: 40px; border-width: 0 2px 2px 0; }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-tag {
+      display: inline-block;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      border: 1px solid var(--accent-blue);
+      padding: 6px 18px;
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fade-up 0.8s ease 2s forwards;
+    }
+
+    .hero-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: clamp(2.4rem, 6vw, 5rem);
+      letter-spacing: 0.08em;
+      line-height: 1.1;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      opacity: 0;
+      animation: fade-up 0.8s ease 2.2s forwards;
+    }
+
+    .hero-title .accent { color: var(--accent-blue); text-shadow: var(--glow-blue); }
+
+    .hero-divider {
+      width: 80px; height: 2px;
+      margin: 24px auto;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-red));
+      box-shadow: 0 0 12px rgba(26,111,255,0.5);
+      opacity: 0;
+      animation: fade-up 0.8s ease 2.4s forwards;
+    }
+
+    .hero-motto {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 500;
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      opacity: 0;
+      animation: fade-up 0.8s ease 2.6s forwards;
+    }
+
+    /* Hero stats bar (Claude's addition) */
+    .hero-stats {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      opacity: 0;
+      animation: fade-up 0.8s ease 2.9s forwards;
+    }
+
+    .hero-stat { text-align: center; }
+
+    .hero-stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.8rem;
+      color: var(--accent-blue);
+      text-shadow: var(--glow-blue);
+      display: block;
+      line-height: 1;
+    }
+
+    .hero-stat-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: block;
+    }
+
+    .hero-stat-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 36px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      animation: fade-up 0.8s ease 3.2s forwards;
+      z-index: 1;
+    }
+
+    .scroll-indicator span {
+      font-size: 0.55rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .scroll-arrow {
+      width: 20px; height: 20px;
+      border-right: 2px solid var(--accent-blue);
+      border-bottom: 2px solid var(--accent-blue);
+      transform: rotate(45deg);
+      animation: bounce 2s ease-in-out infinite;
+      box-shadow: 3px 3px 6px rgba(26,111,255,0.3);
+    }
+
+    @keyframes bounce {
+      0%,100%{transform:rotate(45deg) translateY(0);}
+      50%{transform:rotate(45deg) translateY(6px);}
+    }
+
+    /* =====================================================
+       SHARED SECTION STYLES
+    ===================================================== */
+    .section {
+      padding: var(--section-pad) 0;
+      position: relative;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 72px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .section-line {
+      width: 48px; height: 2px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-red));
+      margin: 20px auto 0;
+    }
+
+    /* =====================================================
+       DIVISIONS SECTION
+    ===================================================== */
+    #divisions { background: var(--bg-secondary); }
+
+    .divisions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 24px;
+    }
+
+    /* ── DIVISION CARD ──────────────────────────────────
+       To add a new division, copy the block between
+       <!-- DIVISION CARD START --> and <!-- DIVISION CARD END -->
+    ─────────────────────────────────────────────────── */
+    .div-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 36px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+      cursor: none;
+    }
+
+    .div-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-red));
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .div-card::after {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(26,111,255,0.08), transparent 70%);
+      border-radius: 50%;
+      transition: transform var(--transition), opacity var(--transition);
+      opacity: 0;
+    }
+
+    .div-card:hover { transform: translateY(-6px); border-color: var(--border-hover); box-shadow: var(--glow-blue), 0 16px 40px rgba(0,0,0,0.4); }
+    .div-card:hover::before { opacity: 1; }
+    .div-card:hover::after  { opacity: 1; transform: scale(1.3); }
+
+    .div-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem; font-weight: 700;
+      letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--accent-blue); margin-bottom: 12px; display: block;
+    }
+
+    .div-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-primary); margin-bottom: 14px; line-height: 1.3;
+    }
+
+    .div-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* =====================================================
+       PERSONNEL SECTION (NEW)
+       HICOMs displayed with gold accent, Mods with blue
+    ===================================================== -->
+    ===================================================== */
+    #personnel { background: var(--bg-primary); }
+
+    .personnel-group { margin-bottom: 64px; }
+    .personnel-group:last-child { margin-bottom: 0; }
+
+    .personnel-group-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .personnel-group-title.hicom { color: var(--accent-gold); }
+    .personnel-group-title.mod   { color: var(--accent-blue); }
+
+    .personnel-group-title::before {
+      content: '';
+      width: 24px; height: 1px;
+      background: currentColor;
+      opacity: 0.5;
+    }
+
+    .personnel-group-title::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: currentColor;
+      opacity: 0.15;
+    }
+
+    .personnel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── PERSONNEL CARD ─────────────────────────────────
+       To add a person: copy from <!-- PERSONNEL CARD START -->
+       to <!-- PERSONNEL CARD END --> and edit the content.
+       Use class="personnel-card hicom" for HICOMs
+       Use class="personnel-card mod"   for Moderators
+    ─────────────────────────────────────────────────── */
+    .personnel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .personnel-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      transition: opacity var(--transition);
+      opacity: 0.6;
+    }
+
+    .personnel-card.hicom::before { background: linear-gradient(90deg, var(--accent-gold), var(--accent-red)); }
+    .personnel-card.mod::before   { background: linear-gradient(90deg, var(--accent-blue), rgba(26,111,255,0.3)); }
+
+    .personnel-card:hover { transform: translateY(-4px); }
+    .personnel-card.hicom:hover { border-color: rgba(200,144,42,0.5); box-shadow: var(--glow-gold); }
+    .personnel-card.mod:hover   { border-color: var(--border-hover); box-shadow: var(--glow-blue); }
+
+    /* Dossier-style avatar placeholder */
+    .personnel-avatar {
+      width: 56px; height: 56px;
+      border-radius: 2px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.3rem;
+      letter-spacing: 0.05em;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .personnel-card.hicom .personnel-avatar {
+      background: rgba(200,144,42,0.1);
+      border: 1px solid rgba(200,144,42,0.3);
+      color: var(--accent-gold);
+    }
+
+    .personnel-card.mod .personnel-avatar {
+      background: rgba(26,111,255,0.08);
+      border: 1px solid rgba(26,111,255,0.2);
+      color: var(--accent-blue);
+    }
+
+    .personnel-rank {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.52rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .personnel-card.hicom .personnel-rank { color: var(--accent-gold); }
+    .personnel-card.mod .personnel-rank   { color: var(--accent-blue); }
+
+    .personnel-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .personnel-role {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* Clearance badge */
+    .personnel-clearance {
+      position: absolute;
+      top: 14px; right: 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.45rem;
+      letter-spacing: 0.15em;
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+
+    .personnel-card.hicom .personnel-clearance {
+      background: rgba(200,144,42,0.12);
+      border: 1px solid rgba(200,144,42,0.3);
+      color: var(--accent-gold);
+    }
+
+    .personnel-card.mod .personnel-clearance {
+      background: rgba(26,111,255,0.08);
+      border: 1px solid rgba(26,111,255,0.2);
+      color: var(--accent-blue);
+    }
+
+    /* =====================================================
+       FIELD REPORTS / BLOG SECTION (NEW)
+    ===================================================== */
+    #reports { background: var(--bg-secondary); }
+
+    /* Featured report — large layout */
+    .report-featured {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .report-featured:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--glow-blue);
+    }
+
+    .report-featured-image {
+      background: var(--bg-secondary);
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-featured-image img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .report-featured:hover .report-featured-image img { transform: scale(1.04); }
+
+    .report-img-placeholder {
+      text-align: center;
+      opacity: 0.25;
+    }
+
+    .report-img-placeholder-icon { font-size: 3rem; display: block; margin-bottom: 8px; }
+    .report-img-placeholder-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .report-featured-body {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .report-tag {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 18px;
+      width: fit-content;
+    }
+
+    .report-tag.ops     { background: rgba(204,31,31,0.12); color: var(--accent-red); border: 1px solid rgba(204,31,31,0.3); }
+    .report-tag.intel   { background: rgba(26,111,255,0.08); color: var(--accent-blue); border: 1px solid rgba(26,111,255,0.25); }
+    .report-tag.admin   { background: rgba(200,144,42,0.1); color: var(--accent-gold); border: 1px solid rgba(200,144,42,0.3); }
+    .report-tag.training{ background: rgba(42,255,122,0.07); color: #2aff7a; border: 1px solid rgba(42,255,122,0.2); }
+
+    .report-date {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .report-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1rem, 2vw, 1.4rem);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+
+    .report-excerpt {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 28px;
+    }
+
+    .report-read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      text-decoration: none;
+      transition: gap var(--transition), color var(--transition);
+    }
+
+    .report-read-more::after {
+      content: '→';
+      transition: transform var(--transition);
+    }
+
+    .report-read-more:hover { color: var(--text-primary); gap: 14px; }
+    .report-read-more:hover::after { transform: translateX(4px); }
+
+    /* Blog grid — smaller cards */
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── REPORT CARD ────────────────────────────────────
+       To add a new report: copy from
+       <!-- REPORT CARD START --> to <!-- REPORT CARD END -->
+       and edit the content. Change the tag class to:
+       ops / intel / admin / training
+    ─────────────────────────────────────────────────── */
+    .report-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    }
+
+    .report-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--glow-blue);
+      transform: translateY(-4px);
+    }
+
+    .report-card .report-title { font-size: 0.9rem; margin-bottom: 0; }
+    .report-card .report-excerpt { font-size: 0.83rem; margin-bottom: 0; flex: 1; }
+
+    /* =====================================================
+       MEDIA SECTION
+    ===================================================== */
+    #media { background: var(--bg-primary); }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .media-item {
+      aspect-ratio: 16/9;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .media-item:hover { border-color: var(--border-hover); box-shadow: var(--glow-blue); }
+
+    .media-item img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .media-item:hover img { transform: scale(1.06); }
+
+    .media-placeholder { text-align: center; pointer-events: none; }
+    .media-placeholder-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.3; display: block; }
+    .media-placeholder-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem; letter-spacing: 0.3em;
+      color: var(--text-muted); text-transform: uppercase;
+    }
+
+    /* =====================================================
+       UPDATES SECTION
+    ===================================================== */
+    #updates { background: var(--bg-secondary); }
+
+    .updates-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    /* ── UPDATE CARD ────────────────────────────────────
+       Paste it at the TOP of .updates-list (newest first)
+    ─────────────────────────────────────────────────── */
+    .update-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px 32px;
+      display: flex;
+      gap: 28px;
+      align-items: flex-start;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    }
+
+    .update-card:hover { border-color: var(--border-hover); box-shadow: var(--glow-blue); transform: translateX(4px); }
+
+    .update-date-col { flex-shrink: 0; text-align: center; padding-top: 2px; }
+    .update-day { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; color: var(--accent-blue); line-height: 1; display: block; }
+    .update-month { font-family: 'Orbitron', sans-serif; font-size: 0.55rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; display: block; margin-top: 4px; }
+    .update-divider { width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; }
+    .update-title { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.07em; color: var(--text-primary); text-transform: uppercase; margin-bottom: 10px; }
+    .update-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* =====================================================
+       CONTACT SECTION
+    ===================================================== */
+    #contact { background: var(--bg-primary); }
+
+    .contact-inner { max-width: 600px; margin: 0 auto; text-align: center; }
+
+    .contact-discord { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+
+    .contact-handle {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: 0.1em; color: var(--accent-blue);
+      text-shadow: var(--glow-blue); margin-bottom: 48px; display: block;
+    }
+
+    .contact-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── BUTTON STYLES ──────────────────────────────────
+       .btn-primary = filled blue
+       .btn-outline  = outlined
+       .btn-red      = filled red
+    ─────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase;
+      text-decoration: none; padding: 14px 32px; border-radius: 2px;
+      transition: all var(--transition); border: 1px solid transparent;
+      cursor: none; position: relative; overflow: hidden;
+    }
+
+    .btn::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.04); opacity: 0; transition: opacity var(--transition); }
+    .btn:hover::before { opacity: 1; }
+
+    .btn-primary { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+    .btn-primary:hover { background: transparent; color: var(--accent-blue); box-shadow: var(--glow-blue); }
+    .btn-outline { background: transparent; color: var(--text-primary); border-color: var(--border-hover); }
+    .btn-outline:hover { border-color: var(--accent-blue); color: var(--accent-blue); box-shadow: var(--glow-blue); }
+    .btn-red { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
+    .btn-red:hover { background: transparent; color: var(--accent-red); box-shadow: var(--glow-red); }
+
+    /* =====================================================
+       FOOTER
+    ===================================================== */
+    footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      text-align: center;
+    }
+
+    .footer-logo { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.2rem; letter-spacing: 0.3em; color: var(--accent-blue); opacity: 0.7; }
+    .footer-sub { font-size: 0.7rem; letter-spacing: 0.25em; color: var(--text-muted); margin-top: 10px; text-transform: uppercase; font-family: 'Orbitron', sans-serif; }
+
+    /* =====================================================
+       SCROLL REVEAL
+    ===================================================== */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    [data-reveal].revealed { opacity: 1; transform: none; }
+
+    [data-reveal][data-reveal-delay="1"] { transition-delay: 0.1s; }
+    [data-reveal][data-reveal-delay="2"] { transition-delay: 0.2s; }
+    [data-reveal][data-reveal-delay="3"] { transition-delay: 0.3s; }
+    [data-reveal][data-reveal-delay="4"] { transition-delay: 0.4s; }
+    [data-reveal][data-reveal-delay="5"] { transition-delay: 0.5s; }
+    [data-reveal][data-reveal-delay="6"] { transition-delay: 0.6s; }
+
+    /* =====================================================
+       UTILITY
+    ===================================================== */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+    @media (max-width: 900px) {
+      .report-featured { grid-template-columns: 1fr; }
+      .report-featured-image { min-height: 200px; }
+    }
+
+    @media (max-width: 768px) {
+      :root { --section-pad: 72px; }
+
+      body { cursor: auto; }
+      #cursor, #cursor-dot { display: none; }
+      a, button, [role="button"] { cursor: pointer; }
+
+      #navbar { padding: 0 24px; }
+
+      .nav-links {
+        position: fixed;
+        top: calc(var(--ticker-height) + var(--navbar-height));
+        left: 0; right: 0;
+        background: rgba(5,8,16,0.97);
+        backdrop-filter: blur(16px);
+        flex-direction: column;
+        gap: 0; padding: 0;
+        max-height: 0; overflow: hidden;
+        transition: max-height 0.4s ease;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-links.open { max-height: 500px; }
+      .nav-links li a { display: block; padding: 16px 32px; border-bottom: 1px solid var(--border); letter-spacing: 0.25em; }
+
+      .nav-toggle { display: flex; }
+
+      .hero-corner { display: none; }
+      .hero-stats { gap: 20px; }
+      .hero-stat-value { font-size: 1.3rem; }
+
+      .update-card { flex-direction: column; gap: 16px; }
+      .update-divider { display: none; }
+
+      .contact-buttons { flex-direction: column; align-items: center; }
+      .btn { width: 100%; max-width: 280px; justify-content: center; }
+
+      .container { padding: 0 20px; }
+
+      .ticker-label { font-size: 0.5rem; padding: 0 10px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-stats { flex-direction: column; gap: 16px; padding-top: 28px; }
+      .hero-stat-divider { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       CUSTOM CURSOR (Claude's addition)
+       Hidden on mobile via CSS
+  ===================================================== -->
+  <div id="cursor">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Crosshair ring -->
+      <circle cx="14" cy="14" r="10" stroke="#1a6fff" stroke-width="0.8" stroke-opacity="0.6"/>
+      <!-- Cross lines -->
+      <line x1="14" y1="2"  x2="14" y2="8"  stroke="#1a6fff" stroke-width="0.8" stroke-opacity="0.8"/>
+      <line x1="14" y1="20" x2="14" y2="26" stroke="#1a6fff" stroke-width="0.8" stroke-opacity="0.8"/>
+      <line x1="2"  y1="14" x2="8"  y2="14" stroke="#1a6fff" stroke-width="0.8" stroke-opacity="0.8"/>
+      <line x1="20" y1="14" x2="26" y2="14" stroke="#1a6fff" stroke-width="0.8" stroke-opacity="0.8"/>
+      <!-- Corner ticks -->
+      <line x1="10" y1="10" x2="11.5" y2="10" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="10" y1="10" x2="10"   y2="11.5" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="18" y1="10" x2="16.5" y2="10" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="18" y1="10" x2="18"   y2="11.5" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="10" y1="18" x2="11.5" y2="18" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="10" y1="18" x2="10"   y2="16.5" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="18" y1="18" x2="16.5" y2="18" stroke="#cc1f1f" stroke-width="0.8"/>
+      <line x1="18" y1="18" x2="18"   y2="16.5" stroke="#cc1f1f" stroke-width="0.8"/>
+    </svg>
+  </div>
+  <div id="cursor-dot"></div>
+
+
+  <!-- =====================================================
+       OPERATIONAL STATUS TICKER (Claude's addition)
+       Edit the text inside .ticker-item spans below.
+       The list is duplicated so the scroll loops cleanly.
+  ===================================================== -->
+  <div id="status-ticker">
+    <div class="ticker-label">▶ SITREP</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner">
+        <!-- These items scroll across. Edit them freely. -->
+        <span class="ticker-item"><span class="dot dot-green"></span>GROUP STATUS: ACTIVE</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>RECRUITMENT: OPEN</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-yellow"></span>NEXT OPERATION: TBA</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>ARI: OPERATIONAL</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>TAW: OPERATIONAL</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-yellow"></span>TRAINING SESSIONS: WEEKLY</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>DISCORD: ONLINE</span>
+        <span class="ticker-sep">///</span>
+        <!-- Duplicate for seamless loop -->
+        <span class="ticker-item"><span class="dot dot-green"></span>GROUP STATUS: ACTIVE</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>RECRUITMENT: OPEN</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-yellow"></span>NEXT OPERATION: TBA</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>ARI: OPERATIONAL</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>TAW: OPERATIONAL</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-yellow"></span>TRAINING SESSIONS: WEEKLY</span>
+        <span class="ticker-sep">///</span>
+        <span class="ticker-item"><span class="dot dot-green"></span>DISCORD: ONLINE</span>
+        <span class="ticker-sep">///</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       LOADING SCREEN
+  ===================================================== -->
+  <div id="loader">
+    <div class="loader-logo">ESG</div>
+    <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+    <p class="loader-text">Initializing</p>
+    <p class="loader-typewriter" id="loaderTypewriter"></p>
+  </div>
+
+
+  <!-- =====================================================
+       NAVBAR
+  ===================================================== -->
+  <nav id="navbar">
+    <a href="#home" class="nav-logo">ES<span>G</span></a>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#divisions">Divisions</a></li>
+      <li><a href="#personnel">Personnel</a></li>
+      <li><a href="#reports">Field Reports</a></li>
+      <li><a href="#media">Media</a></li>
+      <li><a href="#updates">Updates</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+
+  <!-- =====================================================
+       HOME / HERO SECTION
+  ===================================================== -->
+  <section id="home">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-scan"></div>
+
+    <div class="hero-corner tl"></div>
+    <div class="hero-corner tr"></div>
+    <div class="hero-corner bl"></div>
+    <div class="hero-corner br"></div>
+
+    <div class="hero-content">
+      <span class="hero-tag">Classified — Authorized Access Only</span>
+      <h1 class="hero-title">Elite <span class="accent">Special</span> Grupa</h1>
+      <div class="hero-divider"></div>
+      <p class="hero-motto">Discipline &nbsp;·&nbsp; Teamwork &nbsp;·&nbsp; Excellence</p>
+
+      <!-- ── HERO STATS ───────────────────────────────────
+           Edit the numbers and labels.
+           Add/remove .hero-stat + .hero-stat-divider pairs.
+      ─────────────────────────────────────────────────── -->
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value" id="stat-ops">5</span>
+          <span class="hero-stat-label">Divisions</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-value" id="stat-members">—</span>
+          <span class="hero-stat-label">Members</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">OPEN</span>
+          <span class="hero-stat-label">Recruitment</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">2025</span>
+          <span class="hero-stat-label">Founded</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-indicator">
+      <span>Scroll</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       DIVISIONS SECTION
+  ===================================================== -->
+  <section id="divisions" class="section">
+    <div class="container">
+
+      <div class="section-header" data-reveal>
+        <span class="section-label">// Organizational Structure</span>
+        <h2 class="section-title">Our Divisions</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="divisions-grid">
+
+        <!-- DIVISION CARD START -->
+        <div class="div-card" data-reveal data-reveal-delay="1">
+          <span class="div-badge">// Tier I</span>
+          <h3 class="div-title">C-Team</h3>
+          <p class="div-desc">The foundational tier of ESG. C-Team members are recruited operatives undergoing core training and evaluation before advancement.</p>
+        </div>
+        <!-- DIVISION CARD END -->
+
+        <!-- DIVISION CARD START -->
+        <div class="div-card" data-reveal data-reveal-delay="2">
+          <span class="div-badge">// Tier II</span>
+          <h3 class="div-title">B-Team</h3>
+          <p class="div-desc">Proven operatives with field experience. B-Team members have demonstrated loyalty and competence across multiple engagements.</p>
+        </div>
+        <!-- DIVISION CARD END -->
+
+        <!-- DIVISION CARD START -->
+        <div class="div-card" data-reveal data-reveal-delay="3">
+          <span class="div-badge">// Tier III</span>
+          <h3 class="div-title">A-Team</h3>
+          <p class="div-desc">Elite frontline units. A-Team operatives lead operations, enforce discipline, and serve as the backbone of ESG's tactical force.</p>
+        </div>
+        <!-- DIVISION CARD END -->
+
+        <!-- DIVISION CARD START -->
+        <div class="div-card" data-reveal data-reveal-delay="4">
+          <span class="div-badge">// Specialized</span>
+          <h3 class="div-title">TAW</h3>
+          <p class="div-desc">Tactical Air Wing. Provides close air support, rapid deployment, and aerial reconnaissance across all active operational theatres.</p>
+        </div>
+        <!-- DIVISION CARD END -->
+
+        <!-- DIVISION CARD START -->
+        <div class="div-card" data-reveal data-reveal-delay="5">
+          <span class="div-badge">// Intelligence</span>
+          <h3 class="div-title">ARI</h3>
+          <p class="div-desc">Advanced Recon &amp; Investigation. Covert intelligence unit responsible for surveillance, threat assessment, and internal affairs.</p>
+        </div>
+        <!-- DIVISION CARD END -->
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       PERSONNEL SECTION (NEW)
+       HICOM = High Command (gold accents)
+       Moderators = blue accents
+
+       To add a person:
+         1. Copy a personnel-card block
+         2. Set class to "personnel-card hicom" or "personnel-card mod"
+         3. Edit rank, name, role, clearance level, and the
+            initials inside .personnel-avatar
+  ===================================================== -->
+  <section id="personnel" class="section">
+    <div class="container">
+
+      <div class="section-header" data-reveal>
+        <span class="section-label">// Authorized Personnel</span>
+        <h2 class="section-title">Command Structure</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <!-- HIGH COMMAND ─────────────────────────────── -->
+      <div class="personnel-group" data-reveal>
+        <div class="personnel-group-title hicom">High Command (HICOM)</div>
+        <div class="personnel-grid">
+
+          <!-- PERSONNEL CARD START (HICOM) ──────────────
+               Copy & paste below to add more HICOM members
+          ─────────────────────────────────────────────── -->
+          <div class="personnel-card hicom" data-reveal data-reveal-delay="1">
+            <span class="personnel-clearance">HICOM-1</span>
+            <div class="personnel-avatar">O</div>
+            <span class="personnel-rank">// Overseer</span>
+            <div class="personnel-name">Snoodgie/The Overseer</div>
+            <div class="personnel-role">Founder &amp; Group Leader</div>
+          </div>
+          <!-- PERSONNEL CARD END -->
+
+          <!-- PERSONNEL CARD START (HICOM) -->
+          <div class="personnel-card hicom" data-reveal data-reveal-delay="2">
+            <span class="personnel-clearance">HICOM-2</span>
+            <div class="personnel-avatar">VO</div>
+            <span class="personnel-rank">// Vice Overseer</span>
+            <div class="personnel-name">Bepzoo</div>
+            <div class="personnel-role">Second in Command</div>
+          </div>
+          <!-- PERSONNEL CARD END -->
+
+         
+
+        </div>
+      </div>
+
+      <!-- MODERATORS ──────────────────────────────── -->
+      <div class="personnel-group" data-reveal>
+        <div class="personnel-group-title mod">Moderators</div>
+        <div class="personnel-grid">
+
+          <!-- PERSONNEL CARD START (MOD) ────────────────
+               Copy & paste below to add more Moderators
+          ─────────────────────────────────────────────── -->
+          <div class="personnel-card mod" data-reveal data-reveal-delay="1">
+            <span class="personnel-clearance">MOD-1</span>
+            <div class="personnel-avatar">CO</div>
+            <span class="personnel-rank">// Head Moderator/CO/HICOM</span>
+            <div class="personnel-name">Arcmichael1</div>
+            <div class="personnel-role">In charge of management</div>
+          </div>
+          <!-- PERSONNEL CARD END -->
+
+          <!-- PERSONNEL CARD START (MOD) -->
+          <div class="personnel-card mod" data-reveal data-reveal-delay="2">
+            <span class="personnel-clearance">MOD-2</span>
+            <div class="personnel-avatar">C</div>
+            <span class="personnel-rank">//Trial Moderator</span>
+            <div class="personnel-name">hErMaNoZaNeLoRd</div>
+            <div class="personnel-role">Server mangement</div>
+          </div>
+          <!-- PERSONNEL CARD END -->
+
+          
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       FIELD REPORTS / BLOG SECTION (NEW)
+       Featured post at top, then grid of smaller posts.
+
+       REPORT TAGS: ops / intel / admin / training
+       To change a tag colour, change its class.
+
+       To add a new featured report:
+         Edit the .report-featured block below.
+
+       To add a new blog card:
+         Copy from <!-- REPORT CARD START --> to END
+         Paste it at the TOP of .reports-grid (newest first)
+  ===================================================== -->
+  <section id="reports" class="section">
+    <div class="container">
+
+      <div class="section-header" data-reveal>
+        <span class="section-label">// Operational Briefings</span>
+        <h2 class="section-title">Field Reports</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <!-- FEATURED REPORT ────────────────────────────────
+           Edit the tag class, date, title, excerpt below.
+           Replace the placeholder inside .report-featured-image
+           with <img src="yourimage.jpg" alt="desc"> when ready.
+      ─────────────────────────────────────────────────── -->
+      <div class="report-featured" data-reveal>
+        <div class="report-featured-image">
+          <!-- Replace this div with <img src="images/featured.jpg" alt="Featured"> when ready -->
+          <div class="media-item" data-reveal data-reveal-delay="2">
+          <img src="images/scrimresult.png" alt="Scrim Victory">
+        </div>
+        </div>
+        <div class="report-featured-body">
+          <span class="report-tag ops">Operations</span>
+          <div class="report-date">04 APR 2026 &nbsp;·&nbsp; SITREP #001</div>
+          <h2 class="report-title">ESG Scrim Team</h2>
+          <p class="report-excerpt">The Elite Special Grupa Scrim Team faced its first opponents. The result a success. As quoted by the Scrim Team "We basically dominated them". Full debrief below.</p>
+          <a href="#" class="report-read-more">Read Full Report</a>
+        </div>
+      </div>
+
+      <!-- BLOG CARDS GRID -->
+      <div class="reports-grid">
+
+        <!-- REPORT CARD START ──────────────────────────
+             Change .report-tag class to: ops / intel / admin / training
+        ─────────────────────────────────────────────── -->
+        <div class="report-card" data-reveal data-reveal-delay="1">
+          <span class="report-tag training">Training</span>
+          <div class="report-date">01 APR 2026</div>
+          <h3 class="report-title">Training Drills</h3>
+          <p class="report-excerpt">A variety of Combat Trainings, Defensive Trainings and Tryouts have been conducted.</p>
+          <a href="#" class="report-read-more">Read More</a>
+        </div>
+        <!-- REPORT CARD END -->
+
+        <!-- REPORT CARD START -->
+        <div class="report-card" data-reveal data-reveal-delay="2">
+          <span class="report-tag intel">Intelligence</span>
+          <div class="report-date">29 MAR 2026</div>
+          <h3 class="report-title">ARI Division: </h3>
+          <p class="report-excerpt">No updates</p>
+          <a href="#" class="report-read-more">Read More</a>
+        </div>
+        <!-- REPORT CARD END -->
+
+        <!-- REPORT CARD START -->
+        <div class="report-card" data-reveal data-reveal-delay="3">
+          <span class="report-tag admin">Admin</span>
+          <div class="report-date">26 MAR 2026</div>
+          <h3 class="report-title">Recruitment Policy Updated</h3>
+          <p class="report-excerpt">Leadership has revised the recruitment policy to include a formal evaluation period for all new applicants. The updated handbook is available via Discord.</p>
+          <a href="#" class="report-read-more">Read More</a>
+        </div>
+        <!-- REPORT CARD END -->
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       MEDIA SECTION
+  ===================================================== -->
+  <section id="media" class="section">
+    <div class="container">
+
+      <div class="section-header" data-reveal>
+        <span class="section-label">// Visual Archive</span>
+        <h2 class="section-title">Media</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="media-grid">
+
+        <!-- Replace placeholder with <img src="images/cteam.png" alt="C-Team"> etc. -->
+        <div class="media-item" data-reveal data-reveal-delay="1">
+          <img src="images/cteam.png" alt="C-Team Image">
+        </div>
+
+        <div class="media-item" data-reveal data-reveal-delay="2">
+          <img src="images/bteam.png" alt="B-Team Image">
+        </div>
+
+        <div class="media-item" data-reveal data-reveal-delay="3">
+          <img src="images/jumping.png" alt="Tryout">
+        </div>
+
+        <div class="media-item" data-reveal data-reveal-delay="4">
+          <img src="images/kit1.png" alt="Morph">
+        </div>
+
+        <div class="media-item" data-reveal data-reveal-delay="5">
+          <img src="images/kit2.png" alt="Morph">
+        </div>
+
+        <div class="media-item" data-reveal data-reveal-delay="6">
+          <img src="images/kit3.png" alt="Morph">
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       UPDATES SECTION
+  ===================================================== -->
+  <section id="updates" class="section">
+    <div class="container">
+
+      <div class="section-header" data-reveal>
+        <span class="section-label">// Intelligence Feed</span>
+        <h2 class="section-title">Updates</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="updates-list">
+
+        <!-- UPDATE CARD START -->
+        <div class="update-card" data-reveal>
+          <div class="update-date-col">
+            <span class="update-day">03</span>
+            <span class="update-month">Apr</span>
+          </div>
+          <div class="update-divider"></div>
+          <div class="update-body">
+            <h3 class="update-title">Website Launched</h3>
+            <p class="update-desc">The official ESG website is now live. This platform will serve as the primary information hub for all operatives and recruits. More sections coming soon.</p>
+          </div>
+        </div>
+        <!-- UPDATE CARD END -->
+
+        <!-- UPDATE CARD START -->
+        <div class="update-card" data-reveal>
+          <div class="update-date-col">
+            <span class="update-day">01</span>
+            <span class="update-month">Apr</span>
+          </div>
+          <div class="update-divider"></div>
+          <div class="update-body">
+            <h3 class="update-title">A New Month</h3>
+            <p class="update-desc">With a new month come new updates. The ESG has been growing — new members, new game additions, and there is still more to come.</p>
+          </div>
+        </div>
+        <!-- UPDATE CARD END -->
+
+        <!-- UPDATE CARD START -->
+        <div class="update-card" data-reveal>
+          <div class="update-date-col">
+            <span class="update-day">26</span>
+            <span class="update-month">Mar</span>
+          </div>
+          <div class="update-divider"></div>
+          <div class="update-body">
+            <h3 class="update-title">Recruitment Open</h3>
+            <p class="update-desc">ESG is accepting applications for all tiers. Candidates must demonstrate discipline and commitment during the evaluation period. Contact leadership via Discord to apply.</p>
+          </div>
+        </div>
+        <!-- UPDATE CARD END -->
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       CONTACT SECTION
+  ===================================================== -->
+  <section id="contact" class="section">
+    <div class="container">
+
+      <div class="section-header" data-reveal>
+        <span class="section-label">// Communications</span>
+        <h2 class="section-title">Contact</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="contact-inner" data-reveal>
+        <p class="contact-discord">Discord</p>
+        <span class="contact-handle">valk_22904</span>
+
+        <div class="contact-buttons">
+          <a href="https://www.roblox.com/share/g/640491230" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.083 0L0 18.906 18.917 24 24 5.094zm10.903 14.833l-5.765-1.54 1.54-5.764 5.765 1.54z"/></svg>
+            Roblox Group
+          </a>
+          <a href="https://www.youtube.com/@TheRealBaldValk" class="btn btn-outline">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+            YouTube Channel
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       FOOTER
+  ===================================================== -->
+  <footer>
+    <div class="footer-logo">ESG</div>
+    <p class="footer-sub">Elite Special Grupa &nbsp;·&nbsp; Discipline. Teamwork. Excellence.</p>
+  </footer>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ===================================================== -->
+  <script>
+    // ── CUSTOM CURSOR ─────────────────────────────────────
+    var cursor    = document.getElementById('cursor');
+    var cursorDot = document.getElementById('cursor-dot');
+
+    if (cursor && cursorDot) {
+      document.addEventListener('mousemove', function (e) {
+        cursor.style.left    = e.clientX + 'px';
+        cursor.style.top     = e.clientY + 'px';
+        cursorDot.style.left = e.clientX + 'px';
+        cursorDot.style.top  = e.clientY + 'px';
+      });
+
+      document.addEventListener('mousedown', function () { cursor.classList.add('clicked'); });
+      document.addEventListener('mouseup',   function () { cursor.classList.remove('clicked'); });
+    }
+
+    // ── LOADER TYPEWRITER ─────────────────────────────────
+    var lines = [
+      'LOADING PERSONNEL DATABASE...',
+      'VERIFYING CREDENTIALS...',
+      'ACCESS GRANTED.'
+    ];
+    var lineIndex = 0, charIndex = 0;
+    var typeEl = document.getElementById('loaderTypewriter');
+
+    function type() {
+      if (!typeEl) return;
+      if (lineIndex >= lines.length) return;
+      if (charIndex < lines[lineIndex].length) {
+        typeEl.textContent += lines[lineIndex][charIndex];
+        charIndex++;
+        setTimeout(type, 40);
+      } else {
+        setTimeout(function () {
+          typeEl.textContent = '';
+          charIndex = 0;
+          lineIndex++;
+          setTimeout(type, 200);
+        }, 600);
+      }
+    }
+    setTimeout(type, 300);
+
+    // ── LOADING SCREEN ─────────────────────────────────────
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        document.getElementById('loader').classList.add('hidden');
+      }, 2400);
+    });
+
+    // ── NAVBAR: scroll shadow ──────────────────────────────
+    var navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', function () {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // ── NAVBAR: mobile toggle ──────────────────────────────
+    var navToggle = document.getElementById('navToggle');
+    var navLinks  = document.getElementById('navLinks');
+
+    navToggle.addEventListener('click', function () {
+      navLinks.classList.toggle('open');
+    });
+
+    navLinks.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        navLinks.classList.remove('open');
+      });
+    });
+
+    // ── SCROLL REVEAL ──────────────────────────────────────
+    var revealEls = document.querySelectorAll('[data-reveal]');
+
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    revealEls.forEach(function (el) { revealObserver.observe(el); });
+
+    // ── STAT COUNTER ANIMATION ─────────────────────────────
+    // Animates numeric hero stats when they scroll into view.
+    // Edit the targets array to match your stat values.
+    function animateCount(el, target, duration) {
+      var start = 0, startTime = null;
+      function step(ts) {
+        if (!startTime) startTime = ts;
+        var progress = Math.min((ts - startTime) / duration, 1);
+        el.textContent = Math.floor(progress * target);
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = target;
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Only runs once when the hero stats scroll into view
+    var statObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          // Edit these numbers to match your real member count etc.
+          var opEl = document.getElementById('stat-ops');
+          var memEl = document.getElementById('stat-members');
+          if (opEl)  animateCount(opEl,  5,  1200);
+          if (memEl) { memEl.textContent = '—'; } // Update with real number when known
+          statObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    var heroStats = document.querySelector('.hero-stats');
+    if (heroStats) statObs.observe(heroStats);
+  </script>
+
+</body>
+</html>
